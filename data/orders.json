@@ -1,0 +1,26 @@
+[
+	{
+		"orderNo": "S-1001",
+		"deliveryDate": "2026-03-01",
+		"paidAmount": 240,
+		"listPrice": 240,
+		"onCampaign": false,
+		"personalized": false
+	},
+	{
+		"orderNo": "S-1002",
+		"deliveryDate": "2026-03-01",
+		"paidAmount": 180,
+		"listPrice": 240,
+		"onCampaign": true,
+		"personalized": false
+	},
+	{
+		"orderNo": "S-1003",
+		"deliveryDate": "2026-03-01",
+		"paidAmount": 300,
+		"listPrice": 300,
+		"onCampaign": false,
+		"personalized": true
+	}
+]
