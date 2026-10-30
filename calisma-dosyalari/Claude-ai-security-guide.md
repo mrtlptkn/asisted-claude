@@ -19,7 +19,7 @@ Bu rehber, "Claude ile Uygulama Geliştirme" eğitiminin güvenlik tarafını te
 3. Veri güvenliği
 4. İzinler (permissions)
 5. Hook'lar
-6. Gizli bilgiler (şifre, anahtar, `.env`)
+6. Gizli bilgiler (şifre, anahtar, `.env`, .NET'te `appsettings`)
 7. Prompt injection
 8. MCP güvenliği
 9. Git, MR ve insan onayı
@@ -201,7 +201,7 @@ Hook, Claude bir şey yapmadan önce ya da yaptıktan sonra çalışan bir kontr
 
 ---
 
-## 6. Gizli bilgiler (şifre, anahtar, `.env`)
+## 6. Gizli bilgiler (şifre, anahtar, `.env`, .NET'te `appsettings`)
 
 **Kural: Gizli bilgi, koda, prompt'a, `CLAUDE.md`'ye, skill'e ve loglara girmez.**
 
@@ -214,6 +214,52 @@ Hook, Claude bir şey yapmadan önce ya da yaptıktan sonra çalışan bir kontr
 | Yanlışlıkla bir gizli bilgi paylaştıysanız **hemen yenileyin (rotate)** | Silmek yetmez, bir kez sızan bilgi güvenli sayılmaz |
 
 **Örnek:** Test sırasında Claude bir bağlantı dizesi gerektirirse, gerçek değeri değil, `appsettings.Development.json` içinde yerel ve hayali bir değer kullanın. Bizim lab projesinde veri zaten `data/orders.json` gibi hayali dosyalardan okunuyor.
+
+### 6.1 .NET projelerinde `appsettings.json` ve connection string
+
+**Soru:** `appsettings.json` dosyasının okunmasını engelleyelim mi? İçinde connection string olabilir.
+
+**Kısa cevap:** Asıl çözüm, **connection string'i `appsettings.json`'a hiç gerçek değerle yazmamaktır.** Okuma engeli ikinci katmandır. Dosyanın türüne göre karar verin:
+
+| Dosya | Risk | Öneri |
+| ----- | ---- | ----- |
+| `appsettings.json` | Genelde gizli olmayan ayarlar (loglama, süre, URL). Depoya girer | Gizli bilgi **yazmayın**. Claude'un yapıyı görebilmesi için okumaya **izin verin** |
+| `appsettings.Development.json` | Yerel geliştirme ayarları. Gerçek bir şifre içerebilir | İçinde gerçek bir değer varsa `deny` |
+| `appsettings.Production.json`, `appsettings.Staging.json` | Gerçek ortam bağlantıları | **Her zaman `deny`** (ve mümkünse depoda hiç tutmayın) |
+| User Secrets (`secrets.json`) | Geliştiricinin yerel gizli bilgileri, proje dışında durur | **`deny`** |
+| `launchSettings.json` | Ortam değişkenleri içerebilir | İçini kontrol edin, gizli değer varsa taşıyın |
+| `.env` | Gizli değerler | **`deny`** |
+
+**Neden `appsettings.json`'ı topluca engellemiyoruz?** Claude'un bu dosyayı okuyabilmesi, ayarları anlamak ve doğru kod yazmak için sık gerekir. Hepsini engellerseniz iş zorlaşır ve ekip kuralı kapatma eğilimine girer. Gizli bilgiyi dosyadan çıkarırsanız hem sorun hem de engel ihtiyacı ortadan kalkar.
+
+**Gizli bilgiyi nerede tutmalı?**
+
+| Ortam | Yöntem |
+| ----- | ------ |
+| Yerel geliştirme | `dotnet user-secrets` ya da ortam değişkeni |
+| Üretim | Ortam değişkeni, Azure Key Vault ya da kurumunuzun secret manager'ı |
+| `appsettings.json` | Yalnızca boş ya da hayali yer tutucu: `"DefaultConnection": ""` |
+
+**Örnek `deny` kuralları:**
+
+```json
+{
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./appsettings.Production.json)",
+      "Read(**/appsettings.Production.json)",
+      "Read(**/appsettings.Staging.json)",
+      "Read(~/AppData/Roaming/Microsoft/UserSecrets/**)",
+      "Read(~/.microsoft/usersecrets/**)"
+    ]
+  }
+}
+```
+
+Son iki satır, User Secrets klasörü içindir: Windows'ta `AppData/Roaming/Microsoft/UserSecrets`, Linux ve macOS'ta `~/.microsoft/usersecrets`. Yolun sizin makinenizde doğru eşleştiğini `/permissions` ve bilerek bir okuma denemesiyle kontrol edin.
+
+**Bu kuralın sınırı:** `Read` deny kuralı Claude'un **dosya okuma araçlarını** engeller. Claude aynı dosyayı `Bash(cat appsettings.Production.json)` ile okumaya çalışırsa kural onu her zaman yakalamayabilir. Gerçek bir sınır için **sandbox** (Bölüm 10) kullanın. Ayrıca bir gizli bilgi bir kez oturuma girdiyse güvenli saymayın, **yenileyin (rotate)**.
 
 ---
 
@@ -500,6 +546,8 @@ Claude "10 test geçti, 4 eski + 5 yeni" dedi. `dotnet test --list-tests` çıkt
     "deny": [
       "Read(./.env)",
       "Read(./secrets/**)",
+      "Read(**/appsettings.Production.json)",
+      "Read(**/appsettings.Staging.json)",
       "mcp__GitLab__accept_merge_request",
       "mcp__GitLab__save_merge_request_review"
     ],
