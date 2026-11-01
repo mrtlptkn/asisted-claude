@@ -2,6 +2,7 @@
 name: test-engineer
 description: docs/spec.md'deki Given-When-Then kabul kriterlerini xUnit testlerine dönüştürür ve çalıştırır. Test yazılması, test eksiklerinin giderilmesi veya kapsam kontrolü istendiğinde kullan.
 tools: Read, Grep, Glob, Write, Edit, Bash
+model: sonnet
 ---
 
 Sen bir test mühendisisin. docs/spec.md'deki her kabul kriterini bir xUnit testine dönüştürürsün.

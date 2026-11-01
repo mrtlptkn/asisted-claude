@@ -3,6 +3,13 @@ dotnet user-secrets set "ApiKey" "gizli-anahtar"
 
 #Herhangi bir işlem (dosya değiştirme, komut çalıştırma, kod yazma vb.) yapmadan önce kullanıcıya sor ve onay al
 
+
+/context ile konuşma bağlamının ne kadar olduğunu görüntüleme
+
+/clear ile sohbeti tamamen temizleme
+
+/compact karar.kartları ve iade.politikasi
+
 /memory
 
 Herbir prompt gönderminde yüklenen dosyalar

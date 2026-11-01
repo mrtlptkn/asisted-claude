@@ -3,24 +3,37 @@
     "disableAutoMode": "disable",
     "disableBypassPermissionsMode": "disable",
     "allow": [
+      "Bash(dotnet build*)",
+      "Bash(dotnet test*)",
+      "Bash(dotnet format*)",
+      "PowerShell(dotnet build*)",
+      "PowerShell(dotnet test*)",
+      "PowerShell(dotnet format*)",
       "mcp__GitLab__get_work_item",
       "mcp__GitLab__get_work_item_types",
       "mcp__GitLab__list_work_items",
-      "mcp__GitLab__list_projects",
-      "mcp__claude_ai_Google_Calendar__list_events"
+      "mcp__GitLab__list_projects"
     ],
     "deny": [
-      "Read(./.env)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
       "Read(./secrets/**)",
       "Read(**/appsettings.json)",
       "Read(**/appsettings.Production.json)",
       "Read(**/appsettings.Staging.json)",
       "Read(~/AppData/Roaming/Microsoft/UserSecrets/**)",
       "Read(~/.microsoft/usersecrets/**)",
+      "Bash(cat *appsettings*)",
+      "Bash(cat *.env*)",
+      "PowerShell(Get-Content *appsettings*)",
+      "PowerShell(Get-Content *.env*)",
       "Bash(dotnet user-secrets*)",
       "PowerShell(dotnet user-secrets*)",
       "mcp__GitLab__accept_merge_request",
-      "mcp__GitLab__save_merge_request_review"
+      "mcp__GitLab__save_merge_request_review",
+      "mcp__GitLab__save_merge_request",
+      "mcp__GitLab__add_commit",
+      "mcp__GitLab__save_pipeline"
     ]
   },
   "hooks": {

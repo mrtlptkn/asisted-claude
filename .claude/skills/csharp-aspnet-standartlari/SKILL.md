@@ -10,7 +10,7 @@ Adlandırma, test ve güvenlik kuralları `.claude/rules/` altındadır.
 ## Proje yapısı
 
 - Solution: `ReturnService.slnx`
-- `src/ReturnService`: Web API (.NET 9, `net9.0`). İş kuralları `Domain/`, uç noktalar `Endpoints/` klasöründe.
+- `src/ReturnService`: Web API (.NET 10 LTS, `net10.0`). İş kuralları `Domain/`, uç noktalar `Endpoints/` klasöründe.
 - `tests/ReturnService.Tests`: xUnit testleri.
 - İş kuralları (süre, tutar, kargo) ayrı sınıflarda olur ve doğrudan test edilebilir. Uç nokta sınıfında iş kuralı olmaz.
 

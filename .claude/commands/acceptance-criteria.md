@@ -1,3 +1,7 @@
+---
+description: Bir iş kuralı için Given-When-Then kabul kriterleri yazar
+argument-hint: <iş kuralı>
+---
 Aşağıdaki iş kuralı için Given-When-Then biçiminde kabul kriterleri yaz: $ARGUMENTS
 
 Kurallar:

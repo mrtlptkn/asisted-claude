@@ -8,7 +8,7 @@ Tüm kod kimlikleri (proje, klasör, dosya, namespace, sınıf, metot, özellik,
 - Sabitler PascalCase: `ReturnWindowDays = 14`.
 - Dosya adı, içindeki ana sınıfın adıyla aynı olur.
 - Kimlik adlarında Türkçe karakter (ı, ş, ğ, ç, ö, ü) kullanılmaz.
-- Veri dosyalarının adları İngilizce ve kebab-case olur: `data/orders.json`, `data/closed-days.json`.
+- Veri dosyalarının adları İngilizce olur: `data/orders.json`, `data/closed_days.json`.
 
 Türkçe kalan yerler:
 - Kullanıcıya dönen mesajlar: `"İade nedeni zorunludur."`
