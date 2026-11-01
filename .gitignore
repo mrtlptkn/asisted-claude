@@ -1,0 +1,17 @@
+# Gizli bilgiler
+.env
+.env.*
+secrets/
+appsettings.Production.json
+appsettings.Staging.json
+
+# Kişisel Claude ayarları
+CLAUDE.local.md
+.claude/settings.local.json
+
+# .NET derleme çıktıları
+bin/
+obj/
+.vs/
+*.user
+TestResults/
