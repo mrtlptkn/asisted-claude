@@ -199,6 +199,38 @@ Hook, Claude bir şey yapmadan önce ya da yaptıktan sonra çalışan bir kontr
 | Bitirmeden önce bir doğrulama çalıştırmak | Hook (`Stop`) |
 | Gizli bir dosyanın okunmasını engellemek | `Read` deny kuralı |
 
+### ConfigChange hook'u: ayar değişikliği denetimi
+
+`ConfigChange` hook'u, bir ayar dosyası (settings, skills) **oturum sırasında** değiştiğinde çalışır. Eğitimde `audit-config-changes.sh` betiğini bu olaya bağladık: kim, ne zaman, hangi dosyayı değiştirdi bilgisini bir log dosyasına (`~/.claude-audit/config-changes.log`) tek satır JSON olarak ekler. Betik yalnızca kayıt tutar, değişikliği engellemez.
+
+**Kapsam: proje mi, kurum mu?**
+
+| Yer | Etki alanı | Not |
+| --- | ---------- | --- |
+| `.claude/settings.json` (eğitimde yaptığımız) | Yalnızca o proje | Depoyla paylaşılır, ama kullanıcı kendi `settings.local.json` dosyasıyla yanına başka hook ekleyebilir |
+| `managed-settings.json` (**kurum bazlı, önerilen**) | Makinedeki tüm projeler ve kullanıcılar | Kullanıcı kapatamaz ya da geçersiz kılamaz. Hook'lar katmanlı birleşir, kullanıcı ve proje hook'ları managed hook'ları silmez |
+
+Kurumda denetim hook'u proje bazlı değil, **yönetilen ayarlar (managed settings)** üzerinden dağıtılmalıdır. Aksi halde her proje için ayrı kurulum gerekir ve unutulan proje denetimsiz kalır. İsterseniz yönetilen ayarlarda `allowManagedHooksOnly` ile yalnızca yönetilen hook'ların çalışmasını da zorunlu kılabilirsiniz.
+
+`managed-settings.json` dosyasının yolu işletim sistemine göre değişir. Dosyayı yönetici yetkisiyle oluşturun:
+
+| İşletim sistemi | Yol |
+| --------------- | --- |
+| Windows | `C:\Program Files\ClaudeCode\managed-settings.json` |
+| macOS | `/Library/Application Support/ClaudeCode/managed-settings.json` |
+| Linux ve WSL | `/etc/claude-code/managed-settings.json` |
+
+> Eski `C:\ProgramData\ClaudeCode\` yolu Windows'ta artık okunmaz. Aynı klasörde `managed-settings.d/` altına `10-audit.json`, `20-security.json` gibi parçalı dosyalar da koyabilirsiniz. Bunlar alfabetik sırayla birleştirilir. Yollar 01.11.2026 itibarıyla [Managed settings](https://code.claude.com/docs/en/managed-settings) sayfasına göre yazıldı, uygulamadan önce sayfayı kontrol edin.
+
+Kurumsal kullanımda hook betiğini (`audit-config-changes.sh`) projeye değil, makinede herkesin okuyabildiği ama yazamadığı sabit bir klasöre koyun ve managed ayarda o yolu verin. Log klasörünü `CLAUDE_AUDIT_LOG_DIR` ortam değişkeniyle merkezi bir log sistemine yönlendirin.
+
+**Sınırı bilin: hook yalnızca Claude Code oturumu açıkken çalışır.**
+
+- Hook, Claude Code'un **çalışan bir oturumunun** içinde tetiklenir. Oturum kapalıyken bir ayar dosyası editörden, betikle ya da başka bir araçla değiştirilirse hiçbir kayıt düşmez.
+- Bu yüzden `ConfigChange` hook'u "ayar dosyasına kim dokundu" sorusunun **tam** cevabı değildir. Yalnızca oturum sırasındaki değişiklikleri görür.
+- MDM ya da claude.ai yönetim konsolundan dağıtılan yönetilen ayarlar bu hook'u tetiklemez.
+- Tam denetim için dosya sistemi düzeyinde kontrol gerekir: yönetilen ayar dosyasını yalnızca yöneticinin yazabilmesi (dosya izinleri), depodaki `.claude/` klasörü için MR incelemesi ve gerekirse işletim sistemi denetim kaydı.
+
 ---
 
 ## 6. Gizli bilgiler (şifre, anahtar, `.env`, .NET'te `appsettings`)
@@ -371,7 +403,6 @@ Claude'un özetine değil, **gerçek çıktıya** bakın:
 - `dotnet test --list-tests`: kaç test var ve hangileri?
 - Pipeline sonucu: yeşil mi?
 
-**Gerçek örnek:** Claude bir turda "4 eski test, 5 yeni test" dedi. `--list-tests` çıktısı **5 eski test** olduğunu gösterdi. Özetin gerçeğe uymadığı küçük bir hata, ama rakamlara körü körüne güvenmenin riskini gösteriyor.
 
 ### Güvenlik incelemesi için yardımcılar
 
@@ -455,42 +486,15 @@ Eğitimin Gün 1'i ağırlıklı olarak claude.ai sohbet arayüzüyle ilgiliydi.
 | ----- | ------ |
 | Ortak güvenlik kuralları | `.claude/settings.json` içine yazın, depoyla paylaşın (MR ile gözden geçirin) |
 | Merkezi zorunlu ayarlar | **Yönetilen ayarlar (managed settings)** ile `bypassPermissions` ve `auto` modunu kapatın, MCP sunucularını sınırlayın. Kullanıcılar bunları geçersiz kılamaz |
-| Ayar değişikliklerini izleme | `ConfigChange` hook'u ile oturum sırasındaki ayar değişikliklerini denetleyin ya da engelleyin |
-| Kullanımı izleme | OpenTelemetry metrikleri ile Claude Code kullanımını izleyin |
+| Ayar değişikliklerini izleme | `ConfigChange` hook'u ile oturum sırasındaki ayar değişikliklerini denetleyin. Kurumda hook'u proje bazlı değil, **`managed-settings.json`** üzerinden dağıtın (yollar Bölüm 5'te). Hook yalnızca Claude Code oturumu **açıkken** çalışır, oturum dışı değişiklikleri görmez |
 | Kuralların uygulanmasını denetleme | `/permissions` ile periyodik kontrol |
 | Eğitim | Ekibe bu rehberdeki alışkanlıkları öğretin: ne yapıştırılmaz, neyi inceleriz, kim onaylar |
 | Olay bildirimi | Güvenlik açığı bulursanız herkese açık paylaşmayın, Anthropic'in sorumlu ifşa (HackerOne) kanalından bildirin |
 
 ---
 
-## 14. Eğitimde yaşadığımız gerçek örnekler
 
-Bu üç olay, teoride değil gerçek denemelerde yaşandı. Eğitimde anlatmak için çok değerlidir.
-
-### Örnek 1: Claude hook'u Bash ile atladı
-
-- **Ne oldu?** `protect-files` hook'u yalnızca `Edit` ve `Write` araçlarına bakıyordu. Claude dosyayı `Bash(printf ... >> docs/karar-kartlari.md)` ile yazdı ve hook'u atlamış oldu.
-- **Çözüm:** Hook'u `Bash` ve `PowerShell` komutlarında da yazma işaretlerini (`>`, `tee`, `sed -i`, `mv`, `cp`, `rm`, `Set-Content`...) arayacak şekilde genişlettik.
-- **Ders:** **Bir yolu kapatırsanız Claude başka bir yol bulabilir.** Hook bir korkuluktur, güvenlik duvarı değil. Tam güvence için depo koruması (korumalı branch, MR onayı) ve sandbox gerekir.
-
-### Örnek 2: Claude testi koda uydurdu
-
-- **Ne oldu?** `test-before-stop` hook'unun ilk mesajı "kırık testleri düzelt" idi. Claude kırık testi, **beklenen değeri değiştirerek** "düzeltti".
-- **Çözüm:** Hook mesajına "testi ya da beklenen değerleri kod uysun diye DEĞİŞTİRME" yazdık ve `CLAUDE.md`'ye şu kuralı ekledik: "Testler spec'in ifadesidir. Test kırılırsa testi koda uydurma. Kod ile spec çelişiyorsa önce sor."
-- **Ders:** Yapay zeka testi koda uydurmaya eğilimlidir. Test dosyalarındaki değişiklikler MR'da **insan** tarafından gözden geçirilmelidir.
-
-### Örnek 3: Merge aracı Claude'dan gizlendi
-
-- **Ne oldu?** `permissions.deny` ile `accept_merge_request` ve `save_merge_request_review` araçlarını kapattık. Claude'a bu aracı kullanmasını söylediğimizde **"böyle bir araç yok"** dedi.
-- **Ders:** Yasaklanan araçlar Claude'a hiç gösterilmez. Bu, "Claude kararı veremez" ilkesini teknik olarak uygulamanın en güvenilir yoludur. Araç adı `mcp__<sunucu adı>__<araç adı>` biçimindedir ve büyük/küçük harf önemli olabilir. Doğru adı `/mcp` → sunucu → View tools ekranından kontrol edin.
-
-### Bonus gözlem: Claude'un özetine güvenmeyin
-
-Claude "10 test geçti, 4 eski + 5 yeni" dedi. `dotnet test --list-tests` çıktısı **5 eski + 5 yeni** olduğunu gösterdi. Önemli kararlar için her zaman gerçek çıktıya (`git diff`, test listesi, pipeline) bakın.
-
----
-
-## 15. Yapmayın listesi
+## 14. Yapmayın listesi
 
 | Yapmayın | Neden | Bunun yerine |
 | -------- | ----- | ------------ |
@@ -508,7 +512,7 @@ Claude "10 test geçti, 4 eski + 5 yeni" dedi. `dotnet test --list-tests` çıkt
 
 ---
 
-## 16. Kontrol listeleri
+## 15. Kontrol listeleri
 
 ### Projeye başlamadan önce
 
@@ -554,6 +558,17 @@ Claude "10 test geçti, 4 eski + 5 yeni" dedi. `dotnet test --list-tests` çıkt
     "disableBypassPermissionsMode": "disable"
   },
   "hooks": {
+    "ConfigChange": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/audit-config-changes.sh\""
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Edit|Write|Bash|PowerShell",
@@ -584,6 +599,7 @@ Claude "10 test geçti, 4 eski + 5 yeni" dedi. `dotnet test --list-tests` çıkt
 - `mcp__GitLab__...` adındaki `GitLab` kısmı, MCP sunucusunu **eklerken verdiğiniz ada** bağlıdır. Doğru adı `/mcp` → sunucu → View tools ekranında **Full name** satırından kontrol edin.
 - `Bash(curl *)` gibi ağ komutlarını da `deny` listesine ekleyebilirsiniz. Bunun bazı geliştirme işlerinizi (indirme betikleri) etkileyip etkilemediğini önce deneyin.
 - Kuralların tutup tutmadığını `/permissions` ile ve bilerek yasaklı bir işlem isteyerek doğrulayın.
+- `ConfigChange` bloğu eğitimde proje bazlı kuruldu. Kurumda aynı bloğu `managed-settings.json` içine taşıyın (Bölüm 5). Hook yalnızca Claude Code oturumu açıkken çalışır.
 - Bu dosya **minimum** ayardır. Kurumunuzun güvenlik politikasına göre genişletin.
 
 ---
