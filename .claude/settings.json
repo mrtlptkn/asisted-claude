@@ -1,7 +1,5 @@
 {
   "permissions": {
-    "disableAutoMode": "disable",
-    "disableBypassPermissionsMode": "disable",
     "allow": [
       "Bash(dotnet build*)",
       "Bash(dotnet test*)",
@@ -15,8 +13,6 @@
       "mcp__GitLab__list_projects"
     ],
     "deny": [
-      "Read(**/.env)",
-      "Read(**/.env.*)",
       "Read(./secrets/**)",
       "Read(**/appsettings.json)",
       "Read(**/appsettings.Production.json)",
@@ -37,6 +33,17 @@
     ]
   },
   "hooks": {
+    "ConfigChange": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/audit-config-changes.sh\""
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Edit|Write|Bash|PowerShell",
